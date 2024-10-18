@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+    <title>Weather History</title>
+    <meta charset="UTF-8">
+    <meta name="description" content="Weather data with the focus on historical calculations">
+    <meta name="keywords" content="weather, history">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <script src="index.js"></script>
+
+</head>
+
+<div id= "box1"> <h2>Homepage of Weather History</h2> </div>
+
+<a href="climatedata.html" style="font-size: 24px">View Climate Data</a>
+
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Weather News RSS Feed</title>
+    </head>
+    <body>
+        <h1>Weather News RSS Feed</h1>
+        <div id="rss-feed"></div>
+    
+        <script>
+            fetch('https://moxie.foxweather.com/google-publisher/weather-news.xml')
+            .then(response => response.text())
+            .then(data => {
+                const parser = new DOMParser();
+                const xml = parser.parseFromString(data, "application/xml");
+                const items = xml.querySelectorAll("item");
+                
+                let html = "<ul>";
+                items.forEach(item => {
+                    const title = item.querySelector("title").textContent;
+                    const link = item.querySelector("link").textContent;
+                    const description = item.querySelector("description").textContent;
+    
+                    html += `<li>
+                                <h3>${title}</h3>
+                                <p>${description}</p>
+                                <a href="${link}" target="_blank">Read more</a>
+                             </li>`;
+                });
+                html += "</ul>";
+    
+                document.getElementById("rss-feed").innerHTML = html;
+            })
+            .catch(error => {
+                console.error('Error fetching RSS feed:', error);
+                document.getElementById("rss-feed").innerText = 'Unable to load feed.';
+            });
+        </script>
+    </body>
+    </html>
+
+</body>
+</html>

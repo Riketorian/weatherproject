@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Climate Data Form</title>
+    <link rel="stylesheet" href="climatedata.css">
+</head>
+<body>
+    
+    <div class="home-link">
+        <a href="homepage.html">Home</a>
+    </div>
+
+    <form id="climate-form">
+        <div>
+            <label for="location">Enter Location</label>
+            <input id="location" type="text" placeholder="">
+        </div>
+
+        <br><br>
+
+        <div>
+            <label for="startdate">Enter Start Date (YYYY-MM-DD)</label>
+            <input id="startdate" type="text" placeholder="">
+        </div>
+
+        <br><br>
+
+        <div>
+            <label for="enddate">Enter End Date (YYYY-MM-DD)</label>
+            <input id="enddate" type="text" placeholder="">
+        </div>
+
+        <br><br>
+
+        <div>
+            <label for="startdate2">Enter Second Start Date (YYYY-MM-DD)</label>
+            <input id="startdate2" type="text" placeholder="">
+        </div>
+
+        <br><br>
+
+        <div>
+            <label for="enddate2">Enter Second End Date (YYYY-MM-DD)</label>
+            <input id="enddate2" type="text" placeholder="">
+        </div>
+
+        <br><br>
+
+        <div>
+            <input type="submit" value="Get Climate Data">
+        </div>
+    </form>
+
+    <h1>Climate Data Table</h1>
+    <table id="climate-table">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Mean Temp 1 (°F)</th>
+                <th>Date 2</th>
+                <th>Mean Temp 2 (°F)</th>
+                <th>Difference (°F)</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <script>
+        document.getElementById('climate-form').addEventListener('submit', function(event) {
+            event.preventDefault(); // Prevent form submission
+
+            const location = document.getElementById('location').value;
+            const startDate1 = document.getElementById('startdate').value;
+            const endDate1 = document.getElementById('enddate').value;
+            const startDate2 = document.getElementById('startdate2').value;
+            const endDate2 = document.getElementById('enddate2').value;
+
+            // Use a geocoding API to get latitude and longitude
+            fetch(`https://api.opencagedata.com/geocode/v1/json?q=${encodeURIComponent(location)}&key=644ba397927f4e41b91fcfc3e5b3b87e`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.results.length > 0) {
+                    const { lat, lng } = data.results[0].geometry;
+
+                    // Function to fetch climate data
+                    const fetchClimateData = (start, end, callback) => {
+                        const apiUrl = `https://climate-api.open-meteo.com/v1/climate?latitude=${lat}&longitude=${lng}&start_date=${start}&end_date=${end}&models=EC_Earth3P_HR&temperature_unit=fahrenheit&disable_bias_correction=true&daily=temperature_2m_mean`;
+                        return fetch(apiUrl).then(response => response.json()).then(callback);
+                    };
+
+                    // Fetch both date ranges
+                    Promise.all([
+                        fetchClimateData(startDate1, endDate1),
+                        fetchClimateData(startDate2, endDate2)
+                    ]).then(([data1, data2]) => {
+                        const tableBody = document.querySelector('#climate-table tbody');
+                        tableBody.innerHTML = ''; // Clear previous data
+
+                        // Check if data.daily exists
+                        if (data1.daily && data2.daily) {
+                            data1.daily.time.forEach((date, index) => {
+                                const row = document.createElement('tr');
+                                
+                                const dateCell = document.createElement('td');
+                                dateCell.textContent = date;
+
+                                const meanTempCell1 = document.createElement('td');
+                                meanTempCell1.textContent = data1.daily.temperature_2m_mean[index] || 'N/A';
+
+                                // Create a cell for Mean Temp 2 date
+
+                                const meanTemp2DateCell = document.createElement('td');
+                                meanTemp2DateCell.textContent = data2.daily.time[index] || 'N/A';
+
+                                const meanTempCell2 = document.createElement('td');
+                                meanTempCell2.textContent = data2.daily.temperature_2m_mean[index] || 'N/A';
+
+                                const differenceCell = document.createElement('td');
+                                const temp1 = data1.daily.temperature_2m_mean[index];
+                                const temp2 = data2.daily.temperature_2m_mean[index];
+                                differenceCell.textContent = (temp1 && temp2) ? (temp1 - temp2).toFixed(2) : 'N/A';
+
+                                // Append cells to row
+                                row.appendChild(dateCell);
+                                row.appendChild(meanTempCell1);
+                                row.appendChild(meanTemp2DateCell);
+                                row.appendChild(meanTempCell2);
+                                row.appendChild(differenceCell);
+                                
+                                // Append row to the table body
+                                tableBody.appendChild(row);
+                            });
+                        } else {
+                            console.error('Daily data not found');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching the climate data:', error);
+                    });
+                } else {
+                    console.error('Location not found');
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching location data:', error);
+            });
+        });
+    </script>
+</body>
+</html>
